@@ -20,8 +20,8 @@ const app = express();
 
 app.use(
   cors({
-    origin: true,
-    credentials: true,
+    origin: 'https://ireme-software.vercel.app', // Allow only this domain
+    credentials: true, // Allow credentials (cookies, authorization headers)
   })
 );
 
