@@ -9,11 +9,14 @@ const corePublicRouter = require('./routes/coreRoutes/corePublicRouter');
 const adminAuth = require('./controllers/coreControllers/adminAuth');
 const errorHandlers = require('./handlers/errorHandlers');
 const erpApiRouter = require('./routes/appRoutes/appApi');
-const { insertCompany, patchCompany, getCompanyData } = require('./sql/CRUD');
+const { insertCompany, patchCompany, getCompanyData, connection } = require('./sql/CRUD');
 const fileUpload = require('express-fileupload');
+const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session);
 
 // create our Express app
 const app = express();
+const sessionStore = new MySQLStore({}, connection);
 
 app.use(
   cors({
@@ -21,7 +24,14 @@ app.use(
     credentials: true, // Allow credentials (cookies, authorization headers)
   })
 );
-
+app.use(
+  session({
+    secret: 'rbanQ45rw/NmaQjODBmal+ilfEZJAdgi3uHXH3EqYHc=',
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+  })
+);
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -41,18 +51,25 @@ app.post('/api/insert-company', async (req, res) => {
       phone_number: req.body.phone_number,
       tax_number: req.body.tax_number,
       vat_number: req.body.vat_number,
-      reg_number: req.body.reg_number,
-      bank_account: req.body.bank_account,
+      reg_number: req.body.reg_number || null,
+      bank_account: req.body.bank_account || null,
     };
+    console.log(companyData);
 
     // Call the insertCompany function
     await insertCompany(companyData);
 
     // Send a success response
-    res.status(201).json({ message: 'Company inserted successfully' });
+    res.status(201).json({
+      success: true,
+      message: 'Company created successfully!',
+    });
   } catch (error) {
     console.error('Error inserting company:', error);
-    res.status(500).json({ message: 'Error inserting company', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Error creating company',
+    });
   }
 });
 // Define a PATCH route to update a company partially
@@ -94,11 +111,7 @@ app.patch('/api/update-company/:companyID', async (req, res) => {
 // Modify the API route to accept adminID via query params
 app.get('/api/company', async (req, res) => {
   try {
-    const adminID = parseInt(req.query.adminID, 10); // Get adminID from query params
-
-    if (isNaN(adminID)) {
-      return res.status(400).json({ message: 'Invalid adminID' });
-    }
+    const adminID = req.query.adminID; // Get adminID from query params
 
     // Call the getCompanyData function
     const companyData = await getCompanyData(adminID);
@@ -107,7 +120,11 @@ app.get('/api/company', async (req, res) => {
     res.status(200).json({ company: companyData });
   } catch (error) {
     console.error('Error fetching company data:', error.message);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching company data, refresh the page!',
+      error: error.message,
+    });
   }
 });
 

@@ -16,6 +16,7 @@ const listAll = async (Model, req, res) => {
     result = await Model.find({
       removed: false,
       enabled: enabled,
+      createdBy: req.admin._id,
     })
       .sort({ created: sort })
       .populate()

@@ -16,6 +16,7 @@ exports.generatePdf = async (
   modelName,
   info = { filename: 'pdf_file', format: 'A5', targetLocation: '' },
   result,
+  req,
   callback
 ) => {
   try {
@@ -57,6 +58,16 @@ exports.generatePdf = async (
       const { dateFormat } = useDate({ settings });
 
       settings.public_server_file = process.env.PUBLIC_SERVER_FILE;
+      const companyData = req.session.companyData;
+      let company_logo = companyData.company_logo;
+      let base64 = Buffer.from(companyData.company_logo.data).toString('base64');
+      company_logo = `data:image/png;base64,${base64}`;
+      const company_name = companyData.company_name;
+      const bank_account = companyData.bank_account;
+      const company_address = companyData.company_address;
+      const vat_number = companyData.vat_number;
+      const email = companyData.email;
+      const country = companyData.country;
 
       const htmlContent = pug.renderFile('src/pdf/' + modelName + '.pug', {
         model: result,
@@ -65,6 +76,13 @@ exports.generatePdf = async (
         dateFormat,
         moneyFormatter,
         moment: moment,
+        company_logo, // Pass company_logo to Pug
+        company_name, // Pass company_name to Pug
+        bank_account, // Pass bank_account to Pug
+        company_address, // Pass company_address to Pug
+        vat_number, // Pass vat_number to Pug
+        email,
+        country,
       });
 
       pdf

@@ -24,6 +24,7 @@ module.exports = downloadPdf = async (req, res, { directory, id }) => {
         modelName,
         { filename: folderPath, format: 'A4', targetLocation },
         result,
+        req,
         async () => {
           return res.download(targetLocation, (error) => {
             if (error)

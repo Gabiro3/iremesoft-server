@@ -260,11 +260,13 @@ html
     
       header.clearfix
         .top-area
-          img.logo.left(src=settings.public_server_file+settings.company_logo)
+          img.logo.left(src=company_logo)
           .right.company-info
-              p.strong #{settings.company_name}
-              p #{settings.company_address}
-              p #{settings.company_reg_number}
+              p.strong #{company_name}
+              p #{company_address, country}
+              p #{email}
+              p #{vat_number}
+              p #{bank_account}
               
         .col.col-24
           .space  

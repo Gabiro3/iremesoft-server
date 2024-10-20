@@ -34,6 +34,7 @@ const summary = async (req, res) => {
     {
       $match: {
         removed: false,
+        createdBy: req.admin._id,
         // date: {
         //   $gte: startDate.toDate(),
         //   $lte: endDate.toDate(),

@@ -29,6 +29,7 @@ const summary = async (Model, req, res) => {
             $match: {
               removed: false,
               enabled: true,
+              createdBy: req.admin._id,
             },
           },
           {
@@ -41,6 +42,7 @@ const summary = async (Model, req, res) => {
               removed: false,
               created: { $gte: startDate.toDate(), $lte: endDate.toDate() },
               enabled: true,
+              createdBy: req.admin._id,
             },
           },
           {
@@ -59,6 +61,8 @@ const summary = async (Model, req, res) => {
           {
             $match: {
               'invoice.removed': false,
+              'invoice.createdBy': req.admin._id,
+              createdBy: req.admin._id
             },
           },
           {

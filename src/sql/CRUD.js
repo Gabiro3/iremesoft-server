@@ -28,31 +28,15 @@ function insertCompany(companyData) {
     companyData.bank_account,
   ];
 
-  // Connect to the database and insert the data
-  connection.connect((err) => {
+  // Use the existing connection to insert the data
+  connection.query(sql, values, (err, result) => {
     if (err) {
-      return console.error('Error connecting to the database:', err);
+      console.error('Error inserting company data:', err);
+      return;
     }
-    console.log('Connected to the database.');
-
-    connection.query(sql, values, (err, result) => {
-      if (err) {
-        console.error('Error inserting company data:', err);
-        return;
-      }
-      console.log('Company inserted successfully with ID:', result.insertId);
-    });
-
-    // Close the connection
-    connection.end((err) => {
-      if (err) {
-        console.error('Error closing the connection:', err);
-      } else {
-        console.log('Connection closed.');
-      }
-    });
   });
 }
+
 function patchCompany(companyID, adminID, companyData) {
   return new Promise((resolve, reject) => {
     // Step 1: Verify the adminID from the database
@@ -135,6 +119,19 @@ function patchCompany(companyID, adminID, companyData) {
         if (err) {
           return reject(err);
         }
+        try {
+          const existingCompanyData = JSON.parse(localStorage.getItem('companyData'));
+
+          // Update only the fields that were changed
+          const updatedCompanyData = { ...existingCompanyData, ...companyData };
+
+          // Store the updated company data in localStorage
+          localStorage.setItem('companyData', JSON.stringify(updatedCompanyData));
+
+          resolve(result); // Resolve the promise with the result of the database update
+        } catch (storageError) {
+          return reject(new Error('Failed to update local storage: ' + storageError.message));
+        }
         resolve(result);
       });
     });
@@ -147,17 +144,19 @@ function getCompanyData(adminID) {
     connection.query(sql, [adminID], (err, results) => {
       if (err) {
         console.error('Error fetching company data:', err);
-        return reject(new Error('Error fetching company data'));
+        return resolve(null);
       }
 
       if (results.length === 0) {
-        return reject(new Error('No company found for the given adminID'));
+        // No company data found, return null instead of rejecting
+        console.warn(`No company found for adminID: ${adminID}`);
+        return resolve(null); // Gracefully resolve with null
       }
 
-      // Resolve the company data
+      // Resolve with the company data
       resolve(results[0]);
     });
   });
 }
 
-module.exports = { insertCompany, patchCompany, getCompanyData };
+module.exports = { insertCompany, patchCompany, getCompanyData, connection };
