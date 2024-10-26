@@ -1,18 +1,18 @@
-const mysql = require('mysql');
+const { Pool } = require('pg');
 
-// Create a connection to the database
-const connection = mysql.createConnection({
-  host: 'localhost', // Replace with your DB host
-  user: 'gabiro', // Replace with your DB user
-  password: '', // Replace with your DB password
-  database: 'ireme_software', // Replace with your DB name
+// Assuming you have a connection pool set up, for example:
+const pool = new Pool({
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT, // Default port for PostgreSQL
 });
 
-// Function to insert new company data
-function insertCompany(companyData) {
+async function insertCompany(companyData) {
   const sql = `INSERT INTO companies 
     (adminID, company_name, company_logo, company_address, country, email, phone_number, tax_number, vat_number, reg_number, bank_account) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`;
 
   const values = [
     companyData.adminID,
@@ -28,135 +28,124 @@ function insertCompany(companyData) {
     companyData.bank_account,
   ];
 
-  // Use the existing connection to insert the data
-  connection.query(sql, values, (err, result) => {
-    if (err) {
-      console.error('Error inserting company data:', err);
-      return;
-    }
-  });
+  try {
+    // Use the pool to execute the query
+    const result = await pool.query(sql, values);
+
+    // The result object will contain the newly inserted row's ID
+    const insertedCompanyId = result.rows[0].id;
+    console.log('Company inserted successfully with ID:', insertedCompanyId);
+  } catch (err) {
+    console.error('Error inserting company data:', err);
+  }
 }
 
-function patchCompany(companyID, adminID, companyData) {
-  return new Promise((resolve, reject) => {
+async function patchCompany(companyID, adminID, companyData) {
+  try {
     // Step 1: Verify the adminID from the database
-    const verifySql = `SELECT adminID FROM companies WHERE id = ?`;
-    connection.query(verifySql, [companyID], (err, results) => {
-      if (err) {
-        return reject(err);
-      }
+    const verifySql = `SELECT adminID FROM companies WHERE id = $1`;
+    const verifyResult = await pool.query(verifySql, [companyID]);
 
-      if (results.length === 0) {
-        return reject(new Error('Company not found'));
-      }
+    if (verifyResult.rows.length === 0) {
+      throw new Error('Company not found');
+    }
 
-      const storedAdminID = results[0].adminID;
-      // Convert the incoming adminID to an integer
+    const storedAdminID = verifyResult.rows[0].adminid;
 
-      if (storedAdminID !== parseInt(adminID, 10)) {
-        return reject(new Error('Unauthorized: You are not allowed to update this company'));
-      }
+    // Convert the incoming adminID to an integer
+    if (storedAdminID !== adminID) {
+      throw new Error('Unauthorized: You are not allowed to update this company');
+    }
 
-      // Step 3: Dynamically construct the SQL update query based on provided fields
-      let updateFields = [];
-      let updateValues = [];
+    // Step 2: Dynamically construct the SQL update query based on provided fields
+    let updateFields = [];
+    let updateValues = [];
 
-      // Check which fields are provided and add them to the query
-      if (companyData.company_name) {
-        updateFields.push('company_name = ?');
-        updateValues.push(companyData.company_name);
-      }
-      if (companyData.company_logo) {
-        updateFields.push('company_logo = ?');
-        updateValues.push(companyData.company_logo);
-      }
-      if (companyData.company_address) {
-        updateFields.push('company_address = ?');
-        updateValues.push(companyData.company_address);
-      }
-      if (companyData.country) {
-        updateFields.push('country = ?');
-        updateValues.push(companyData.country);
-      }
-      if (companyData.email) {
-        updateFields.push('email = ?');
-        updateValues.push(companyData.email);
-      }
-      if (companyData.phone_number) {
-        updateFields.push('phone_number = ?');
-        updateValues.push(companyData.phone_number);
-      }
-      if (companyData.tax_number) {
-        updateFields.push('tax_number = ?');
-        updateValues.push(companyData.tax_number);
-      }
-      if (companyData.vat_number) {
-        updateFields.push('vat_number = ?');
-        updateValues.push(companyData.vat_number);
-      }
-      if (companyData.reg_number) {
-        updateFields.push('reg_number = ?');
-        updateValues.push(companyData.reg_number);
-      }
-      if (companyData.bank_account) {
-        updateFields.push('bank_account = ?');
-        updateValues.push(companyData.bank_account);
-      }
+    // Check which fields are provided and add them to the query
+    if (companyData.company_name) {
+      updateFields.push('company_name = $' + (updateFields.length + 1));
+      updateValues.push(companyData.company_name);
+    }
+    if (companyData.company_logo) {
+      updateFields.push('company_logo = $' + (updateFields.length + 1));
+      updateValues.push(companyData.company_logo);
+    }
+    if (companyData.company_address) {
+      updateFields.push('company_address = $' + (updateFields.length + 1));
+      updateValues.push(companyData.company_address);
+    }
+    if (companyData.country) {
+      updateFields.push('country = $' + (updateFields.length + 1));
+      updateValues.push(companyData.country);
+    }
+    if (companyData.email) {
+      updateFields.push('email = $' + (updateFields.length + 1));
+      updateValues.push(companyData.email);
+    }
+    if (companyData.phone_number) {
+      updateFields.push('phone_number = $' + (updateFields.length + 1));
+      updateValues.push(companyData.phone_number);
+    }
+    if (companyData.tax_number) {
+      updateFields.push('tax_number = $' + (updateFields.length + 1));
+      updateValues.push(companyData.tax_number);
+    }
+    if (companyData.vat_number) {
+      updateFields.push('vat_number = $' + (updateFields.length + 1));
+      updateValues.push(companyData.vat_number);
+    }
+    if (companyData.reg_number) {
+      updateFields.push('reg_number = $' + (updateFields.length + 1));
+      updateValues.push(companyData.reg_number);
+    }
+    if (companyData.bank_account) {
+      updateFields.push('bank_account = $' + (updateFields.length + 1));
+      updateValues.push(companyData.bank_account);
+    }
 
-      // Add the company ID for the WHERE clause
-      updateValues.push(companyID);
+    // If no fields to update, return early
+    if (updateFields.length === 0) {
+      throw new Error('No fields provided to update');
+    }
 
-      // If no fields to update, return early
-      if (updateFields.length === 0) {
-        return reject(new Error('No fields provided to update'));
-      }
+    // Add the company ID for the WHERE clause
+    updateValues.push(companyID);
 
-      // Construct the SQL update query
-      const updateSql = `UPDATE companies SET ${updateFields.join(', ')} WHERE id = ?`;
+    // Construct the SQL update query
+    const updateSql = `UPDATE companies SET ${updateFields.join(', ')} WHERE id = $${
+      updateFields.length + 1
+    }`;
 
-      // Execute the update query
-      connection.query(updateSql, updateValues, (err, result) => {
-        if (err) {
-          return reject(err);
-        }
-        try {
-          const existingCompanyData = JSON.parse(localStorage.getItem('companyData'));
+    // Execute the update query
+    const updateResult = await pool.query(updateSql, updateValues);
 
-          // Update only the fields that were changed
-          const updatedCompanyData = { ...existingCompanyData, ...companyData };
+    // Optionally, update the local storage
 
-          // Store the updated company data in localStorage
-          localStorage.setItem('companyData', JSON.stringify(updatedCompanyData));
-
-          resolve(result); // Resolve the promise with the result of the database update
-        } catch (storageError) {
-          return reject(new Error('Failed to update local storage: ' + storageError.message));
-        }
-        resolve(result);
-      });
-    });
-  });
+    return updateResult;
+  } catch (error) {
+    console.error('Error updating company:', error);
+    throw error;
+  }
 }
-function getCompanyData(adminID) {
-  return new Promise((resolve, reject) => {
-    const sql = 'SELECT * FROM companies WHERE adminID = ?';
+async function getCompanyData(adminID) {
+  // Corrected SQL query to match the case of the "adminid" column
+  const sql = 'SELECT * FROM companies WHERE "adminid" = $1';
 
-    connection.query(sql, [adminID], (err, results) => {
-      if (err) {
-        console.error('Error fetching company data:', err);
-        return resolve(null);
-      }
+  try {
+    // Execute the query using the PostgreSQL pool
+    const result = await pool.query(sql, [adminID]);
 
-      if (results.length === 0) {
-        // No company data found, return null instead of rejecting
-        console.warn(`No company found for adminID: ${adminID}`);
-        return resolve(null); // Gracefully resolve with null
-      }
+    if (result.rows.length === 0) {
+      console.warn(`No company found for adminID: ${adminID}`);
+      return null; // Gracefully resolve with null
+    }
 
-      // Resolve with the company data
-      resolve(results[0]);
-    });
-  });
+    // Return the company data
+    return result.rows[0];
+  } catch (err) {
+    console.error('Error fetching company data:', err);
+    return null; // Return null on error
+  }
 }
 
-module.exports = { insertCompany, patchCompany, getCompanyData, connection };
+module.exports = { insertCompany, patchCompany, getCompanyData, pool };

@@ -9,27 +9,35 @@ const corePublicRouter = require('./routes/coreRoutes/corePublicRouter');
 const adminAuth = require('./controllers/coreControllers/adminAuth');
 const errorHandlers = require('./handlers/errorHandlers');
 const erpApiRouter = require('./routes/appRoutes/appApi');
-const { insertCompany, patchCompany, getCompanyData, connection } = require('./sql/CRUD');
+const { insertCompany, patchCompany, getCompanyData, pool } = require('./sql/CRUD');
 const fileUpload = require('express-fileupload');
 const session = require('express-session');
-const MySQLStore = require('express-mysql-session')(session);
+const PgSession = require('connect-pg-simple')(session);
 
 // create our Express app
 const app = express();
-const sessionStore = new MySQLStore({}, connection);
+const sessionStore = new PgSession({
+  pool, // Use the same PostgreSQL pool that you are using for your queries
+  tableName: 'session', // Optional, the default table name is 'session'
+});
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET, // Secure secret for signing session IDs
+    store: sessionStore, // Use PostgreSQL session store
+    resave: false, // Don't force session save if not modified
+    saveUninitialized: false, // Don't save empty sessions
+    cookie: {
+      secure: false, // Set this to true in production (when using HTTPS)
+      httpOnly: true, // Ensures the cookie is sent only over HTTP(S)
+      maxAge: 1000 * 60 * 60 * 24 * 3, // 3 days session expiration
+    },
+  })
+);
 
 app.use(
   cors({
     origin: ['https://ireme-software.vercel.app', 'http://localhost:3000'], // Allow only these domains
     credentials: true, // Allow credentials (cookies, authorization headers)
-  })
-);
-app.use(
-  session({
-    secret: 'rbanQ45rw/NmaQjODBmal+ilfEZJAdgi3uHXH3EqYHc=',
-    store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
   })
 );
 app.use(cookieParser());

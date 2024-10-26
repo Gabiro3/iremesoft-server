@@ -6,6 +6,7 @@ const { listAllSettings, loadSettings } = require('@/middlewares/settings');
 const { getData } = require('@/middlewares/serverData');
 const useLanguage = require('@/locale/useLanguage');
 const { useMoney, useDate } = require('@/settings');
+const { getCompanyData } = require('@/sql/CRUD');
 
 const pugFiles = ['invoice', 'offer', 'quote', 'payment'];
 

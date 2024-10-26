@@ -15,6 +15,7 @@ methods.create = async (req, res) => {
   const countDefault = await Model.countDocuments({
     isDefault: true,
   });
+  req.body.createdBy = req.admin._id;
 
   const result = await new Model({
     ...req.body,
