@@ -38,7 +38,7 @@ const mail = async (req, res) => {
   const companyBankAccount = companyData.bank_account;
   const companyEmail = companyData.email;
   const createdBy = companyData.company_name || 'Ireme Software';
-  const customerEmail = 'gabiroarnaud@gmail.com' || 'support@schoolie.co.rw';
+  const customerEmail = invoiceResult.client.email || 'support@schoolie.co.rw';
   const title = `Invoice from ${createdBy}`;
 
   // Read the HTML template from the 'email/index.html' directory located outside the current directory
