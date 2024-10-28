@@ -66,6 +66,7 @@ const mail = async (req, res) => {
   htmlTemplate = htmlTemplate.replace('{{client_phone}}', invoiceResult.client.phone);
   htmlTemplate = htmlTemplate.replace('{{client_address}}', invoiceResult.client.address);
   htmlTemplate = htmlTemplate.replace('{{total}}', invoiceResult.total);
+  htmlTemplate = htmlTemplate.replace('{{logo_url}}', process.env.FRONTEND_PUBLIC_APP_URL);
   let itemsHTML = '';
   invoiceData.items.forEach((item) => {
     itemsHTML += `
