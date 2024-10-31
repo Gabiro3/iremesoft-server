@@ -36,7 +36,7 @@ app.use(
 
 app.use(
   cors({
-    origin: ['https://ireme-software.vercel.app', 'http://localhost:3000'], // Allow only these domains
+    origin: [`${process.env.FRONTEND_PUBLIC_APP_URL}`, 'http://localhost:3000'], // Allow only these domains
     credentials: true, // Allow credentials (cookies, authorization headers)
   })
 );
